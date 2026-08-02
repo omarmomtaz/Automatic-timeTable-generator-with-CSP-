@@ -1,29 +1,3 @@
-"""
-Curated CSIT dataset extracted from the three uploaded timetable PDFs:
- - _CSIT__TimeTable_Spring_2026.pdf
- - CSIT_TimeTable_ALL_Year_CSIT_Fall_22_9_2025__Halls_Final.pdf
- - ALL_Year_CSIT__final.pdf
-
-NOTE ON DATA FIDELITY
----------------------
-The source PDFs are grid/table timetables whose text extraction lost all row/column
-alignment (cells came out as one long jumbled stream). It is not possible to
-losslessly reconstruct the *original* day/time/room assignment for every cell from
-that text. What IS reliably recoverable, and what this file curates, is the set of
-real-world ENTITIES that the CSP needs as input:
-    - course codes, names, and which session types they run (LEC / TUT / LAB)
-    - the year (extracted from the standard CS numbering convention: 1xx/2xx/3xx/4xx)
-    - the semester it was seen in (Fall doc vs Spring doc)
-    - the specialization track for years 3-4 (CNC / AID / CSC / BIF)
-    - real instructor / TA names as printed next to each course
-    - real room/hall/lab identifiers as printed in the sheets
-
-The CSP solver then builds a *fresh, optimal* timetable from this data -- it does not
-try to reproduce the original (jumbled) placement, it only reuses the real
-course/instructor/room entities so the output reflects the actual CSIT program.
-"""
-
-# ---------------------------------------------------------------------------
 # Time structure: Sunday-Thursday, 8 periods/day (matches the source sheets)
 # ---------------------------------------------------------------------------
 DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"]
@@ -77,11 +51,6 @@ ROOMS += [
 
 ROOM_TYPE_FOR_SESSION = {"LEC": ("theater", "hall"), "TUT": ("tutorial",), "LAB": ("lab",)}
 
-# ---------------------------------------------------------------------------
-# Sections (student groups). Year 1 & 2 run parallel groups of the SAME
-# curriculum. Year 3 & 4 split into specialization tracks, each a separate
-# "section" since a CNC-track student never takes an AID/CSC/BIF-track course.
-# ---------------------------------------------------------------------------
 SECTIONS = {
     1: ["Y1-G1", "Y1-G2", "Y1-G3", "Y1-G4"],
     2: ["Y2-G1", "Y2-G2", "Y2-G3", "Y2-G4"],
@@ -92,11 +61,6 @@ SECTIONS = {
 def all_sections_for_year(year):
     return SECTIONS[year]
 
-# ---------------------------------------------------------------------------
-# Approx section (group) sizes, used to enforce room-capacity constraints.
-# These are reasonable assumptions (not printed in the source sheets, which
-# never listed enrolment numbers) documented here rather than hidden.
-# ---------------------------------------------------------------------------
 SECTION_SIZE = {
     "Y1-G1": 30, "Y1-G2": 30, "Y1-G3": 30, "Y1-G4": 30,
     "Y2-G1": 30, "Y2-G2": 30, "Y2-G3": 30, "Y2-G4": 30,
@@ -110,29 +74,12 @@ def required_capacity(sections):
     return sum(SECTION_SIZE.get(s, 30) for s in sections)
 
 
-# ---------------------------------------------------------------------------
-# NAMED SYNTHETIC IDENTITIES
-# ---------------------------------------------------------------------------
-# The source PDFs frequently printed a department/pool label instead of a
-# named individual (e.g. "TUT BAS", "LAB BAS", or simply "xxx") for service
-# courses taught by a rotating pool of TAs. Treating a pool label as if it
-# were ONE person forces the CSP to keep 20+ unrelated sections from ever
-# overlapping in time -- an artificial constraint that doesn't exist in
-# reality. None of the names below are drawn from the source documents (they
-# were never named there); they are invented so each parallel section gets
-# its own distinct, schedulable identity, and the instructor-clash
-# constraint becomes meaningful again instead of accidentally over-restrictive.
 BAS_TAS = ["Eng. Yasmine Adel", "Eng. Karim Refaat", "Eng. Nourhan Sabry", "Eng. Ziad Mahfouz"]
 ECE_TAS = ["Eng. Tarek Fahmy", "Eng. Mona Kamel", "Eng. Youssef Adly", "Eng. Nesma Wagdy"]
 LANG_TAS = ["Instr. Hanan Zaki", "Instr. Rasha Adel", "Instr. Sherine Kamal", "Instr. Yasmin Farouk"]
 
 # ---------------------------------------------------------------------------
-# Courses. Each entry:
-#   code, name, year, semester ("Fall"/"Spring"), sessions (subset of LEC/TUT/LAB),
-#   sections -> list of section ids that take this course,
-#   instructors -> dict session_type -> instructor name (or list, one per section
-#                  index if different TAs run different sections' TUT/LAB)
-# ---------------------------------------------------------------------------
+
 COURSES = []
 
 

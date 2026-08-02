@@ -2,12 +2,6 @@ from collections import defaultdict
 
 
 def verify(assignment, by_id, total_variables=None):
-    """Return list of violation strings (empty = fully valid, COMPLETE schedule).
-
-    total_variables: if given, an assignment covering fewer than this many
-    sessions is reported as an INCOMPLETE SCHEDULE violation -- otherwise a
-    partial (fallback) assignment could silently read as "zero violations".
-    """
     room_slot = defaultdict(list)
     section_slot = defaultdict(list)
     instr_slot = defaultdict(list)

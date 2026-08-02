@@ -1,43 +1,3 @@
-"""
-Generic CSP engine for the CSIT timetable problem.
-
-Variables  : one per (course, session-type, section-group) that needs a slot.
-             A shared LEC counts as ONE variable whose "sections" set is every
-             section taking that course (they all sit in the same lecture at
-             the same time). A TUT/LAB is one variable PER section (parallel
-             groups run at possibly-different times/rooms/TAs).
-
-Domain     : every (day, period, room) triple where room.type is allowed for
-             that session type AND room.capacity >= the number of attendees
-             (the combined size of every section the variable serves).
-
-Hard constraints (checked during search):
-  C1 - Room clash       : a room cannot host two sessions in the same (day,period).
-  C2 - Section clash    : a section (a group of students) cannot have two
-                          sessions in the same (day,period) -- keeps a
-                          student's own timetable conflict-free.
-  C3 - Instructor clash : a named instructor/TA cannot teach two sessions in
-                          the same (day,period). Every instructor in data.py
-                          is now a distinct named individual (real or
-                          deliberately-invented -- see data.py docstring), so
-                          this constraint is meaningful rather than an
-                          artificial pool-wide lockstep.
-  C4 - Semester isolation: solved implicitly -- one CSP is built and solved
-                          per semester, so Fall and Spring never share
-                          variables/domain.
-  C5 - Year isolation    : implicit in C2, since a section id already encodes
-                          its year; a Y3-CNC section can never collide with a
-                          Y1 section.
-  C6 - Room capacity     : implicit in the domain construction (see above).
-
-Soft objective (optimization, not just feasibility):
-  Multiple independent restarts each produce a complete, hard-constraint-valid
-  assignment; `schedule_cost` scores each one by how many idle gap-periods a
-  section sits through in a day (a 9am class then a 1pm class, with a big
-  hole in between, is worse than a compact block). The solver returns the
-  lowest-cost complete solution found across restarts, not just the first
-  feasible one.
-"""
 import random
 from data import DAYS, PERIODS, ROOMS, ROOM_TYPE_FOR_SESSION, required_capacity
 
@@ -93,8 +53,6 @@ def build_domain(var):
 
 
 def schedule_cost(assignment, by_id):
-    """Soft-constraint score: lower is better. Penalizes idle gap-periods
-    that a section would sit through between its classes on the same day."""
     from collections import defaultdict
     per_section_day = defaultdict(list)
     for vid, (day, period, _room) in assignment.items():
@@ -135,10 +93,6 @@ class Solver:
         return False
 
     def solve(self):
-        """Run several independent restarts, keep every COMPLETE (fully
-        assigned, hard-constraint-valid) solution found, and return the one
-        with the lowest soft-constraint cost. Falls back to the best partial
-        assignment only if no restart manages to place every variable."""
         self.by_id = {v.vid: v for v in self.variables}
         complete_solutions = []
         best_partial = {}
